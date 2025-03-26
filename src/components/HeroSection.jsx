@@ -3,14 +3,14 @@ import React from "react";
 const HeroSection = () => {
   return (
     <section
-      className="bg-cover bg-center h-screen"
+      className="bg-cover bg-center h-[600px]" // Reduced height to 500px
       style={{
-        backgroundImage: `url("/src/assets/church.png")`,
+        backgroundImage: `url("/src/assets/church.jpeg")`,
       }}
     >
       <div className="container mx-auto px-4 h-full flex items-center justify-center text-center text-white">
         <div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 ">
             Welcome to Jeevan Marg Church
           </h2>
           <p className="text-lg md:text-xl mb-6">

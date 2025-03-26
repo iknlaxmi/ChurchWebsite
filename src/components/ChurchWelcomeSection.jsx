@@ -12,7 +12,7 @@ const ChurchWelcomeSection = () => {
             </h1>
 
             <p className="text-gray-700 text-lg">
-              At Grace Church, we believe in creating a warm and inclusive
+              At Jeevan Marg Church, we believe in creating a warm and inclusive
               environment where everyone can experience God's love. Our
               community is built on faith, fellowship, and service to others.
             </p>
@@ -34,7 +34,7 @@ const ChurchWelcomeSection = () => {
           <div className="w-full md:w-1/2">
             <div className="bg-gray-200 rounded-lg overflow-hidden">
               <img
-                src="/src/assets/welcome_man1.jpg"
+                src="/src/assets/bible.jpg"
                 alt="Church pastor"
                 className="w-full h-full object-cover"
               />
