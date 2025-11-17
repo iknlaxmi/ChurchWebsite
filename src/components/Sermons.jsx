@@ -1,181 +1,279 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Play, Download, Search, Filter } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+};
+
 const Sermons = () => {
-  const location = useLocation();
   const [sermons, setSermons] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [sortBy, setSortBy] = useState("Latest");
-  const [currentAudio, setCurrentAudio] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const audioRef = useRef(null);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [isPlaying, setIsPlaying] = useState({});
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef({});
 
-  // Extract bookName from route state
-  const bookName = location.state?.bookName || "All";
-
-  // Fetch sermons from API
   useEffect(() => {
     const fetchSermons = async () => {
       try {
         setIsLoading(true);
-        // Replace with your actual API endpoint
         const response = await axios.get("http://localhost:3000/api/audios", {
-          params: {
-            bookName: bookName,
-            // search: searchTerm,
-            // sortBy: sortBy,
+          headers: {
+            "Content-Type": "application/json",
           },
         });
-        console.log("data", response);
         setSermons(response.data.data);
+        console.log(response.data.data);
         setIsLoading(false);
-      } catch (err) {
-        setError("Failed to fetch sermons");
+      } catch (error) {
+        console.error("Error fetching sermons:", error);
+        setError(error.message);
         setIsLoading(false);
-        console.error("Sermon fetch error:", err);
       }
     };
 
     fetchSermons();
-  }, [bookName, searchTerm, sortBy]);
+  }, []);
 
-  // Sermon playback handler
-  const handlePlaySermon = (sermon) => {
-    if (currentAudio === sermon.id) {
-      audioRef.current.pause();
-      setCurrentAudio(null);
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      audioRef.current = new Audio(sermon.audioUrl);
-      audioRef.current.play();
-      setCurrentAudio(sermon.id);
+  const handleDownload = async (sermon) => {
+    try {
+      // Construct full URL for the audio file
+      const audioUrl = `http://localhost:3000${sermon.audioFilePath}`;
+
+      // Fetch the audio file
+      const response = await axios({
+        url: audioUrl,
+        method: "GET",
+        responseType: "blob", // Important for file download
+      });
+
+      // Create a link element to trigger download
+      const link = document.createElement("a");
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      link.href = url;
+
+      // Set filename (use sermon title or fallback to 'sermon')
+      link.download = `${sermon.title || "sermon"}.mp3`;
+
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download the sermon. Please try again.");
     }
   };
 
-  // Render loading state
+  const handlePlayPause = (sermon) => {
+    // If no audio element exists for this sermon, create one
+    if (!audioRef.current[sermon.id]) {
+      audioRef.current[sermon.id] = new Audio(
+        `http://localhost:3000${sermon.audioFilePath}`
+      );
+
+      // Add event listeners
+      audioRef.current[sermon.id].addEventListener("loadedmetadata", () => {
+        setDuration(audioRef.current[sermon.id].duration);
+      });
+      audioRef.current[sermon.id].addEventListener("timeupdate", () =>
+        updateProgress(sermon.id)
+      );
+      audioRef.current[sermon.id].addEventListener("ended", () =>
+        handleAudioEnd(sermon.id)
+      );
+    }
+
+    const audio = audioRef.current[sermon.id];
+
+    // If this sermon is already playing
+    if (currentlyPlaying === sermon.id) {
+      if (audio.paused) {
+        audio.play();
+        setIsPlaying((prev) => ({ ...prev, [sermon.id]: true }));
+      } else {
+        audio.pause();
+        setIsPlaying((prev) => ({ ...prev, [sermon.id]: false }));
+      }
+    } else {
+      // If another sermon was playing, pause it
+      if (currentlyPlaying && audioRef.current[currentlyPlaying]) {
+        audioRef.current[currentlyPlaying].pause();
+        setIsPlaying((prev) => ({ ...prev, [currentlyPlaying]: false }));
+      }
+
+      // Play the new sermon
+      audio.play();
+      setCurrentlyPlaying(sermon.id);
+      setIsPlaying((prev) => ({ ...prev, [sermon.id]: true }));
+    }
+  };
+
+  const updateProgress = (sermonId) => {
+    if (audioRef.current[sermonId]) {
+      const progressPercent =
+        (audioRef.current[sermonId].currentTime /
+          audioRef.current[sermonId].duration) *
+        100;
+      setProgress(progressPercent);
+      setCurrentTime(audioRef.current[sermonId].currentTime);
+    }
+  };
+
+  const handleAudioEnd = (sermonId) => {
+    setCurrentlyPlaying(null);
+    setIsPlaying((prev) => ({ ...prev, [sermonId]: false }));
+    setProgress(0);
+    setCurrentTime(0);
+  };
+
+  const handleSeek = (e, sermonId) => {
+    if (audioRef.current[sermonId]) {
+      const seekTime =
+        (e.nativeEvent.offsetX / e.target.offsetWidth) *
+        audioRef.current[sermonId].duration;
+      audioRef.current[sermonId].currentTime = seekTime;
+      setProgress((seekTime / audioRef.current[sermonId].duration) * 100);
+      setCurrentTime(seekTime);
+    }
+  };
+
+  // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <p>Loading sermons...</p>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500"></div>
       </div>
     );
   }
 
-  // Render error state
+  // Error state
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-red-600">
-        <p>{error}</p>
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-red-500 text-xl">
+          Error loading sermons: {error}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-4">
-        {bookName === "All" ? "All Sermons" : `Sermons on ${bookName}`}
-      </h1>
-      <p className="text-center text-gray-600 mb-8">
-        Listen to inspiring messages from our weekly services
-      </p>
+      <h1 className="text-3xl font-bold mb-6">Sermons</h1>
 
-      {/* Search and Filter Section */}
-      <div className="flex mb-8 space-x-4">
-        <div className="relative flex-grow">
-          <input
-            type="text"
-            placeholder="Search sermons..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-        </div>
-
-        <select
-          className="px-4 py-2 border rounded-lg"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option>All Categories</option>
-        </select>
-
-        <select
-          className="px-4 py-2 border rounded-lg"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option>Latest</option>
-          <option>Oldest</option>
-        </select>
-      </div>
-
-      {/* Sermons Grid */}
-      {sermons.length === 0 ? (
-        <div className="text-center text-gray-600">
-          No sermons found for this selection.
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-3 gap-6">
-          {sermons.map((sermon) => (
-            <div
-              key={sermon.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
-            >
-              <div className="relative">
-                <img
-                  src={sermon.image}
-                  alt={sermon.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div
-                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                  onClick={() => handlePlaySermon(sermon)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sermons.map((sermon) => (
+          <div
+            key={sermon.id}
+            className="bg-white rounded-lg shadow-md overflow-hidden"
+          >
+            <div className="relative">
+              <img
+                src={`http://localhost:3000${sermon.thumbnailPath}`}
+                alt={sermon.title}
+                className="w-full h-64 object-cover"
+              />
+              <div className="absolute top-0 right-0 m-2 bg-black/50 text-white px-2 py-1 rounded">
+                {sermon.duration}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <button
+                  onClick={() => handlePlayPause(sermon)}
+                  className="bg-white rounded-full w-16 h-16 flex items-center justify-center"
                 >
-                  <Play className="text-white" size={64} />
-                </div>
-                <div className="absolute top-2 right-2 bg-white bg-opacity-80 px-2 py-1 rounded">
-                  {sermon.duration}
-                </div>
+                  {isPlaying[sermon.id] ? (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="black"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="6" y="4" width="4" height="16"></rect>
+                      <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                  ) : (
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="black"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                  )}
+                </button>
               </div>
-              <div className="p-4">
-                <h3 className="font-bold text-lg mb-2">{sermon.title}</h3>
-                <div className="flex justify-between items-center text-gray-600">
-                  <span>{sermon.speaker}</span>
-                  <span>{sermon.date}</span>
-                </div>
-                <div className="flex justify-between mt-4">
-                  <button
-                    className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                    onClick={() => handlePlaySermon(sermon)}
-                  >
-                    <Play className="mr-2" size={20} /> Play
-                  </button>
-                  <button className="text-gray-600 hover:text-gray-800">
-                    <Download size={20} />
-                  </button>
-                </div>
-              </div>
+              <button
+                className="absolute bottom-2 right-2 bg-white rounded-full p-2"
+                onClick={() => handleDownload(sermon)}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </button>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-8 space-x-2">
-        <button className="px-4 py-2 border rounded">&lt;</button>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded">1</button>
-        <button className="px-4 py-2 border rounded">2</button>
-        <button className="px-4 py-2 border rounded">3</button>
-        <span className="px-4 py-2">...</span>
-        <button className="px-4 py-2 border rounded">10</button>
-        <button className="px-4 py-2 border rounded">&gt;</button>
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-1">{sermon.title}</h2>
+              <div className="text-gray-600 mb-2">
+                <span>{sermon.preacher}</span>
+              </div>
+              <div className="text-sm text-gray-500">
+                {new Date(sermon.date).toLocaleDateString("en-US", {
+                  month: "long", // Full month name (e.g., "December")
+                  day: "numeric", // Day of the month (e.g., "10")
+                  year: "numeric", // Full year (e.g., "2023")
+                })}
+              </div>
+
+              {currentlyPlaying === sermon.id && (
+                <div className="mt-2">
+                  <div
+                    className="h-1 bg-gray-200 cursor-pointer relative"
+                    onClick={(e) => handleSeek(e, sermon.id)}
+                  >
+                    <div
+                      className="h-1 bg-blue-500 absolute top-0 left-0"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600 mt-1">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -59,12 +59,6 @@ const ChurchCommunitySection = () => {
             />
           </div>
         </div>
-
-        <div className="text-center">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-8 rounded-full transition duration-300">
-            Join Our Community
-          </button>
-        </div>
       </div>
     </div>
   );

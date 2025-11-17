@@ -63,8 +63,8 @@ const Header = () => {
           <a href="/about" className="text-gray-600 hover:text-blue-600">
             About
           </a>
-          <a href="/contact" className="text-gray-600 hover:text-blue-600">
-            Contact
+          <a href="/community" className="text-gray-600 hover:text-blue-600">
+            Community
           </a>
         </nav>
       </div>

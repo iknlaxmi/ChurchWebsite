@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const ChurchWelcomeSection = () => {
+  const navigate = useNavigate();
   return (
     <div className="w-full bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4">
@@ -24,7 +26,10 @@ const ChurchWelcomeSection = () => {
             </p>
 
             <div className="pt-4">
-              <button className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-8 rounded-full transition duration-300">
+              <button
+                onClick={() => navigate("/about")}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-8 rounded-full transition duration-300"
+              >
                 Learn More About Us
               </button>
             </div>

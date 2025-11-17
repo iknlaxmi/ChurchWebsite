@@ -9,11 +9,12 @@ import ChurchCommunitySection from "./components/ChurchCommunitySection";
 import ContactSection from "./components/ContactSection";
 import Footer from "./components/Footer";
 // Add new components for routed pages
-import Blog from "./components/Blog"; // Create this component
+import BlogPage from "./components/BlogPage"; // Create this component
 import About from "./components/About"; // Create this component
 import Sermons from "./components/Sermons"; // Create this component
 import Books from "./components/Books"; // Create this component
 import SermonsList from "./components/SermonsList";
+import JoinCommunity from "./components/JoinCommunity";
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
             element={
               <>
                 <HeroSection />
-                <ChurchWebsiteSection />
+                {/* <ChurchWebsiteSection /> */}
                 <ChurchWelcomeSection />
                 <ChurchResourcesSection />
                 <ChurchCommunitySection />
@@ -36,9 +37,9 @@ function App() {
             }
           />
           {/* Other page routes */}
-          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog" element={<BlogPage />} />
           <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<ContactSection />} />
+          <Route path="/community" element={<JoinCommunity />} />
           <Route path="/resources/sermons" element={<SermonsList />} />
           <Route path="/resources/books" element={<Books />} />
           <Route path="/resources/sermons/:bookName" element={<Sermons />} />

@@ -1,7 +1,9 @@
 import React from "react";
 import { Play, Calendar, Newspaper } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const ChurchResourcesSection = () => {
+  const navigate = useNavigate();
   return (
     <div className="max-w-7xl mx-auto py-16 px-4">
       <h2 className="text-3xl font-bold text-center mb-12">
@@ -21,7 +23,10 @@ const ChurchResourcesSection = () => {
             Watch and listen to our collection of inspiring messages
           </p>
 
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-full transition duration-300">
+          <button
+            onClick={() => navigate("/resources/sermons")}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-full transition duration-300"
+          >
             Browse Sermons
           </button>
         </div>
@@ -55,7 +60,10 @@ const ChurchResourcesSection = () => {
             Read our latest articles on faith and community
           </p>
 
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-full transition duration-300">
+          <button
+            onClick={() => navigate("/blog")}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-full transition duration-300"
+          >
             Read Blog
           </button>
         </div>

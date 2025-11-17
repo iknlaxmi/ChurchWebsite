@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   return (
     <section
       className="bg-cover bg-center h-[600px]" // Reduced height to 500px
@@ -18,7 +20,10 @@ const HeroSection = () => {
             journey of worship, fellowship, and spiritual growth.
           </p>
           <div className="space-x-4">
-            <button className="bg-white text-blue-600 px-6 py-3 rounded-full hover:bg-gray-200">
+            <button
+              onClick={() => navigate("/community")}
+              className="bg-white text-blue-600 px-6 py-3 rounded-full hover:bg-gray-200"
+            >
               Join Our Community
             </button>
             <button className="bg-white text-blue-600 px-6 py-3 rounded-full hover:bg-gray-200">
